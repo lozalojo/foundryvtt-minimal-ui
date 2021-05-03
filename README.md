@@ -16,9 +16,10 @@ Auto-Hides UI elements after Chat inactivity or when switching scenes.
 This allows making up space intelligently for you to save space during actual game
 without having to manually hide unwanted elements.
 
-### Organized Minimize (Default: OFF)
+### Organized Minimize (Default: ON)
 Intelligently positions minimized windows in a dedicated horizontal area, and 
 allows displaying a taskbar for it. This helps to find minimized windows quickly.
+Organized Minimize+ Setting allows colouring minimized windows to find them quicker
 
 ## Foundry Logo
 * Custom logo image can be provided
@@ -71,6 +72,9 @@ Build Script: `npm run build`
 
 ![Example GIF](./examplegif-long3.gif)
 ![Example Image](./example12.jpg)
+
+# License
+[MIT License](./LICENSE.md)
 
 # Powered By
 [![JetBrains](./jetbrains.svg)](https://www.jetbrains.com)

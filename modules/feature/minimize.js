@@ -5,55 +5,229 @@ export default class MinimalUIMinimize {
 
     static minimizedStash = {};
     static cssMinimizedSize = 150;
-    static cssTopBarWidthDiff = 430;
-    static cssTopBarLeftStart = 100;
-    static cssBottomBarWidthDiff = 525;
-
-    static fixMinimizedRule(rule, measure) {
-        let stylesheet = document.querySelector('link[href*=minimalui]');
-
-        if( stylesheet ){
-            stylesheet = stylesheet.sheet;
-            stylesheet.insertRule(`
-                .minimized { 
-                    ${rule}: ${measure} !important;
-                    width: ${MinimalUIMinimize.cssMinimizedSize}px !important;
-                }
-                `, stylesheet.cssRules.length
-            );
-        }
-    }
+    static cssMinimizedBottomHotbar = 70;
+    static cssMinimizedBottomNoHotbar = 5;
+    static cssTopBarLeftStart = 120;
+    static cssBottomBarLeftStart = 160;
 
     static positionMinimizeBar() {
-        const availableWidth = parseInt($("#board").css('width'));
-        switch (game.settings.get('minimal-ui', 'organizedMinimize')) {
+        const setting = game.settings.get('minimal-ui', 'organizedMinimize');
+        const bar = $('#minimized-bar').hide();
+        const barHtml = $(`<div id="minimized-bar" class="app" style="display: none;"></div>`);
+        switch (setting) {
             case 'topBar': {
-                rootStyle.setProperty('--minimw', availableWidth - MinimalUIMinimize.cssTopBarWidthDiff + 'px');
+                rootStyle.setProperty('--minibarbot', 'unset');
+                rootStyle.setProperty('--minibartop', (MinimalUIMinimize.getTopPosition()-4)+'px');
+                rootStyle.setProperty('--minibarleft', MinimalUIMinimize.cssTopBarLeftStart + 'px');
+                if (bar.length === 0)
+                    barHtml.appendTo('body');
                 break;
             }
             case 'bottomBar': {
-                rootStyle.setProperty('--minimw', availableWidth - MinimalUIMinimize.cssBottomBarWidthDiff + 'px');
+                const hotbarSetting = game.settings.get('minimal-ui', 'hotbar');
+                if (hotbarSetting === 'hidden' || (hotbarSetting === 'onlygm' && !game.user?.isGM))
+                    rootStyle.setProperty('--minibarbot', MinimalUIMinimize.cssMinimizedBottomNoHotbar+'px');
+                else
+                    rootStyle.setProperty('--minibarbot', MinimalUIMinimize.cssMinimizedBottomHotbar+'px');
+                rootStyle.setProperty('--minibartop', 'unset');
+                rootStyle.setProperty('--minibarleft', MinimalUIMinimize.cssBottomBarLeftStart + 'px');
+                if (bar.length === 0)
+                    barHtml.appendTo('body');
                 break;
             }
         }
+    }
+
+    static getTopPosition() {
+        const minimizedSetting = game.settings.get('minimal-ui', 'organizedMinimize');
+        if (['bottomBar', 'bottom'].includes(minimizedSetting)) {
+            const hotbarSetting = game.settings.get('minimal-ui', 'hotbar');
+            let availableHeight = parseInt($("#board").css('height'));
+            if (hotbarSetting === 'hidden' || (hotbarSetting === 'onlygm' && !game.user?.isGM))
+                return availableHeight - MinimalUIMinimize.cssMinimizedBottomNoHotbar - 42;
+            else
+                return availableHeight - MinimalUIMinimize.cssMinimizedBottomHotbar - 42;
+        } else {
+            const logoSetting = game.settings.get('minimal-ui', 'foundryLogoSize');
+            let offset = document.querySelector("#navigation").offsetHeight + 20;
+            // 65px is Rough estimate for standard logo size, to not overlap
+            if (logoSetting === 'standard')
+                offset = Math.max(65, offset);
+            return offset;
+        }
+    }
+
+    static getLeftPosition(app) {
+        const minimizedSetting = game.settings.get('minimal-ui', 'organizedMinimize');
+        const minGap = ['top', 'topBar'].includes(minimizedSetting) ? MinimalUIMinimize.cssTopBarLeftStart + 10 : MinimalUIMinimize.cssBottomBarLeftStart + 10;
+        const sidebarGap = MinimalUIMinimize.cssMinimizedSize * 4;
+        const jumpGap = MinimalUIMinimize.cssMinimizedSize + 10;
+        const boardSize = parseInt($("#board").css('width'));
+        const maxGap = boardSize - sidebarGap;
+        let targetPos;
+        for (let i = minGap; i < maxGap + jumpGap; i = i + jumpGap) {
+            if (MinimalUIMinimize.minimizedStash[i]?.app.appId === app.appId) {
+                MinimalUIMinimize.minimizedStash[i].oldPosition = Object.assign({}, app.position);
+                targetPos = i;
+                break;
+            } else if (!targetPos && !MinimalUIMinimize.minimizedStash[i]?.app.rendered) {
+                MinimalUIMinimize.minimizedStash[i] = {app: app, oldPosition: Object.assign({}, app.position)};
+                targetPos = i;
+                break;
+            }
+        }
+        return targetPos;
+    }
+
+    static setMinimizedPosition(app) {
+        MinimalUIMinimize.cleanupStash();
+        const leftPos = MinimalUIMinimize.getLeftPosition(app);
+        const topPos = MinimalUIMinimize.getTopPosition();
+        app.setPosition({
+            left: leftPos ?? app.position.left,
+            top: topPos ?? app.position.top,
+            width: MinimalUIMinimize.cssMinimizedSize
+        });
+    }
+
+    static setRestoredPosition(app) {
+        const minimizedStash = Object.values(MinimalUIMinimize.minimizedStash);
+        const matchedStash = minimizedStash.find(a => a.app.appId === app?.appId);
+        app.setPosition(matchedStash?.oldPosition ?? app.position);
+    }
+
+    static cleanupStash() {
+        const appIds = [];
+        Object.keys(MinimalUIMinimize.minimizedStash).forEach(i => {
+            const stash = MinimalUIMinimize.minimizedStash[i];
+            if (!stash.app?.rendered || appIds.includes(stash.app?.appId)) {
+                delete MinimalUIMinimize.minimizedStash[i];
+            } else if (stash.app){
+                appIds.push(stash.app.appId);
+            }
+        });
+    }
+
+    static refreshMinimizeBar() {
         const minimized = $(".minimized");
         const bar = $("#minimized-bar");
+        const stashSize = Object.keys(MinimalUIMinimize.minimizedStash).length;
         if (minimized.length === 0) {
             MinimalUIMinimize.minimizedStash = {};
             bar.hide();
-        } else {
+        } else if (stashSize > 0) {
+            if (stashSize === 1)
+                MinimalUIMinimize.positionMinimizeBar();
+            MinimalUIMinimize.cleanupStash();
+            const maxPosition = Math.max(
+                ...Object.entries(MinimalUIMinimize.minimizedStash)
+                    .filter(([_, app]) => app.app.rendered && app.app._minimized)
+                    .map(([pos, _]) => Number(pos))
+                    .concat(0)
+            );
+            const setting = game.settings.get('minimal-ui', 'organizedMinimize');
+            if (setting === 'topBar') {
+                rootStyle.setProperty('--minibarw', maxPosition + 40 + 'px');
+            } else
+                rootStyle.setProperty('--minibarw', maxPosition + 'px');
             minimized.show();
             bar.show();
         }
     }
 
     static cleanupMinimizeBar(app, force) {
-        const minimizedApps = $(".minimized");
-        const minimizedStash = Object.values(MinimalUIMinimize.minimizedStash);
-        const matchedStash = minimizedStash.find(a => a.appId === app?.appId);
-        if ((force) || (minimizedApps.length === 0) || (minimizedApps.length === 1 && matchedStash)) {
-            MinimalUIMinimize.minimizedStash = {};
+        const minimizedApps = $(".minimized").toArray();
+        const matchedStash = minimizedApps.find(a => $(a).attr('data-appid') == app?.appId);
+        if (matchedStash) {
+            $(matchedStash).css('visibility', 'hidden');
+            MinimalUIMinimize.setRestoredPosition(app);
+            MinimalUIMinimize.unEnrichStyling(app);
+        } else if (force) {
+            Object.values(MinimalUIMinimize.minimizedStash).forEach(stashed => {
+                MinimalUIMinimize.setRestoredPosition(stashed.app);
+                MinimalUIMinimize.unEnrichStyling(stashed.app);
+            });
+        }
+        if (force || (minimizedApps.length === 0) || (minimizedApps.length === 1 && matchedStash)) {
             $("#minimized-bar").hide();
+            MinimalUIMinimize.minimizedStash = {};
+        } else if (matchedStash) {
+            MinimalUIMinimize.refreshMinimizeBar();
+        }
+    }
+
+    static enrichStyling(app) {
+        app.element.find(".close").empty();
+        app.element.find(".close").append(`<a class="header-button close"><i class="fas fa-times"></i></a>`);
+        app.element.find(".minimize").empty();
+        app.element.find(".minimize").append(`<i class="far fa-window-restore"></i>`);
+        app.element.find(".minimize").show();
+        if (game.settings.get('minimal-ui', 'enrichedMinimize') === 'enabled') {
+            const header = app.element.find(".window-header");
+            if (header.hasClass('minimized-was-pinned'))
+                header.addClass('minimized-pinned');
+            header.on('contextmenu', function () {
+                if (header.hasClass('minimized-pinned')) {
+                    header.removeClass('minimized-pinned');
+                    header.removeClass('minimized-was-pinned');
+                }
+                else
+                    header.addClass('minimized-pinned');
+            });
+            header.hover(
+                function () {
+                    header.addClass('minimized-highlight');
+                },
+                function () {
+                    header.removeClass('minimized-highlight');
+                }
+            );
+        }
+    }
+
+    static unEnrichStyling(app) {
+        app.element.find(".close").empty();
+        app.element.find(".close").append(`<i class="fas fa-times"></i>`);
+        app.element.find(".minimize").empty();
+        app.element.find(".minimize").append(`<i class="far fa-window-minimize"></i>`);
+        if (game.settings.get('minimal-ui', 'enrichedMinimize') === 'enabled') {
+            const header = app.element.find(".window-header");
+            if (header.hasClass('minimized-pinned'))
+                header.addClass('minimized-was-pinned');
+            header.removeClass('minimized-pinned');
+            header.off();
+        }
+    }
+
+    static reapplyMaximize(app, h, w) {
+        app.setPosition({
+            width: w - (ui.sidebar._collapsed ? 50 : 325),
+            height: h - 15,
+            left: 10,
+            top: 3
+        });
+    }
+
+    static maximizeWindow(app) {
+        if (app._maximized) {
+            app.setPosition(app._maximized);
+            app.element
+                .find(".fa-window-restore")
+                .removeClass('fa-window-restore')
+                .addClass('fa-window-maximize');
+            delete app._maximized;
+        } else {
+            const board = $("#board");
+            const availableHeight = parseInt(board.css('height'));
+            const availableWidth = parseInt(board.css('width'));
+            app._maximized = {};
+            Object.assign(app._maximized, app.position);
+            MinimalUIMinimize.reapplyMaximize(app, availableHeight, availableWidth);
+            MinimalUIMinimize.reapplyMaximize(app, availableHeight, availableWidth);
+            app.element
+                .find(".fa-window-maximize")
+                .removeClass('fa-window-maximize')
+                .addClass('fa-window-restore');
         }
     }
 
@@ -71,7 +245,37 @@ export default class MinimalUIMinimize {
                 "topBar": game.i18n.localize("MinimalUI.OrganizedMinimizeTopBar"),
                 "disabled": game.i18n.localize("MinimalUI.Disabled")
             },
-            default: "disabled",
+            default: "topBar",
+            onChange: _ => {
+                window.location.reload();
+            }
+        });
+        game.settings.register('minimal-ui', 'enrichedMinimize', {
+            name: game.i18n.localize("MinimalUI.EnrichedMinimizeName"),
+            hint: game.i18n.localize("MinimalUI.EnrichedMinimizeHint"),
+            scope: 'world',
+            config: true,
+            type: String,
+            choices: {
+                "enabled": game.i18n.localize("MinimalUI.Enabled"),
+                "disabled": game.i18n.localize("MinimalUI.Disabled")
+            },
+            default: "enabled",
+            onChange: _ => {
+                window.location.reload();
+            }
+        });
+        game.settings.register('minimal-ui', 'organizedMaximize', {
+            name: game.i18n.localize("MinimalUI.OrganizedMaximizeName"),
+            hint: game.i18n.localize("MinimalUI.OrganizedMaximizeHint"),
+            scope: 'world',
+            config: true,
+            type: String,
+            choices: {
+                "enabled": game.i18n.localize("MinimalUI.Enabled"),
+                "disabled": game.i18n.localize("MinimalUI.Disabled")
+            },
+            default: "enabled",
             onChange: _ => {
                 window.location.reload()
             }
@@ -80,106 +284,77 @@ export default class MinimalUIMinimize {
 
     static initHooks() {
 
-        $(document).keydown((event) => {
-            // 27 == Escape
-            if (event.which === 27) {
-                if (Object.keys(MinimalUIMinimize.minimizedStash).length > 0) {
-                    MinimalUIMinimize.cleanupMinimizeBar(undefined, true);
-                }
-            }
-
-        });
-
         Hooks.once('ready', async function() {
-            if (game.settings.get('minimal-ui', 'organizedMinimize') !== 'disabled') {
+            const setting = game.settings.get('minimal-ui', 'organizedMinimize');
+            if (setting !== 'disabled') {
 
-                libWrapper.register('minimal-ui', 'Application.prototype.minimize', async function (wrapped, ...args) {
-                    const minimizedSetting = game.settings.get('minimal-ui', 'organizedMinimize');
-                    const minGap = ['top', 'topBar'].includes(minimizedSetting) ? MinimalUIMinimize.cssTopBarLeftStart + 10 : 200;
-                    const sidebarGap = MinimalUIMinimize.cssMinimizedSize * 4;
-                    const jumpGap = MinimalUIMinimize.cssMinimizedSize + 10;
-                    const boardSize = parseInt($("#board").css('width'));
-                    const maxGap = boardSize - sidebarGap;
-                    console.log('MinimalUI: Application.prototype.minimize was called');
-                    const targetHtml = $(`[data-appid='${this.appId}']`);
-                    targetHtml.hide();
-                    let targetPos;
-                    for (let i = minGap; i < maxGap + jumpGap; i = i + jumpGap) {
-                        if (MinimalUIMinimize.minimizedStash[i]?.appId === this.appId) {
-                            targetPos = i;
-                            break;
-                        } else if (!targetPos && !MinimalUIMinimize.minimizedStash[i]?.rendered) {
-                            MinimalUIMinimize.minimizedStash[i] = this;
-                            targetPos = i;
-                            break;
+                libWrapper.register('minimal-ui', 'KeyboardManager.prototype._onEscape', function (wrapped, ...args) {
+                    let [_, up, modifiers] = args;
+                    if ( up || modifiers.hasFocus ) return wrapped(...args);
+                    else if ( !(ui.context && ui.context.menu.length) ) {
+                        if (  Object.keys(MinimalUIMinimize.minimizedStash).length > 0) {
+                            MinimalUIMinimize.cleanupMinimizeBar(undefined, true);
                         }
                     }
-                    this.setPosition({left: targetPos ?? this.position.left});
-                    const result = wrapped(...args);
-                    this.element.find(".close").text('');
-                    this.element.find(".close").append(`<a class="header-button close"><i class="fas fa-times"></i></a>`);
-                    await new Promise(waitABit => setTimeout(waitABit, 200));
-                    if (['bottomBar', 'topBar'].includes(minimizedSetting)) {
-                        $("#minimized-bar").show();
-                    }
-                    targetHtml.show();
+                    return wrapped(...args);
+                }, 'WRAPPER');
+
+                libWrapper.register('minimal-ui', 'Application.prototype.minimize', async function (wrapped, ...args) {
+                    const targetHtml = $(`[data-appid='${this.appId}']`);
+                    targetHtml.css('visibility', 'hidden');
+                    const result = await wrapped(...args);
+                    MinimalUIMinimize.setMinimizedPosition(this);
+                    MinimalUIMinimize.enrichStyling(this);
+                    MinimalUIMinimize.refreshMinimizeBar();
+                    targetHtml.css('visibility', '');
                     return result;
                 }, 'WRAPPER');
 
                 libWrapper.register('minimal-ui', 'Application.prototype.maximize', async function (wrapped, ...args) {
-                    console.log('MinimalUI: Application.prototype.maximize was called');
-                    let targetHtml = $(`[data-appid='${this.appId}']`);
-                    targetHtml.hide();
-                    let result = wrapped(...args);
-                    await new Promise(waitABit => setTimeout(waitABit, 200));
-                    const minimizedSetting = game.settings.get('minimal-ui', 'organizedMinimize');
-                    if (['bottomBar', 'topBar'].includes(minimizedSetting))
-                        MinimalUIMinimize.cleanupMinimizeBar(this);
-                    this.element.find(".close").text('');
-                    this.element.find(".close").append(`<i class="fas fa-times"></i>Close`);
-                    targetHtml.show();
+                    const targetHtml = $(`[data-appid='${this.appId}']`);
+                    targetHtml.css('visibility', 'hidden');
+                    const result = await wrapped(...args);
+                    MinimalUIMinimize.setRestoredPosition(this);
+                    MinimalUIMinimize.refreshMinimizeBar();
+                    MinimalUIMinimize.unEnrichStyling(this);
+                    targetHtml.css('visibility', '');
                     return result;
                 }, 'WRAPPER');
 
-                switch (game.settings.get('minimal-ui', 'organizedMinimize')) {
-                    case 'top': {
-                        MinimalUIMinimize.fixMinimizedRule('top', '70px');
-                        break;
+                libWrapper.register('minimal-ui', 'Application.prototype._getHeaderButtons', function (wrapped, ...args) {
+                    let result = wrapped(...args);
+                    const close = result.find(b => b.class === 'close');
+                    close.label = '';
+                    const newButtons = [];
+                    const minimizeButton = {
+                        label: "",
+                        class: "minimize",
+                        icon: "far fa-window-minimize",
+                        onclick: () => {
+                            if (this._minimized)
+                                this.maximize();
+                            else
+                                this.minimize();
+                        }
+                    };
+                    newButtons.push(minimizeButton)
+                    const maximizeSetting = game.settings.get('minimal-ui', 'organizedMaximize');
+                    if (maximizeSetting === 'enabled' && this.options.resizable) {
+                        const maximizeButton = {
+                            label: "",
+                            class: "maximize",
+                            icon: this._maximized ? "far fa-window-restore" : "far fa-window-maximize",
+                            onclick: () => {
+                                MinimalUIMinimize.maximizeWindow(this)
+                            }
+                        }
+                        newButtons.push(maximizeButton)
                     }
-                    case 'topBar': {
-                        rootStyle.setProperty('--minimbot', 'unset');
-                        rootStyle.setProperty('--minimtop', '65px');
-                        rootStyle.setProperty('--minileft', MinimalUIMinimize.cssTopBarLeftStart + 'px');
-                        const minimizedBar = $(`<div id="minimized-bar" class="app"></div>`);
-                        minimizedBar.appendTo('body');
-                        MinimalUIMinimize.positionMinimizeBar();
-                        MinimalUIMinimize.fixMinimizedRule('top', '70px');
-                        break;
-                    }
-                    case 'bottom': {
-                        MinimalUIMinimize.fixMinimizedRule('top', 'unset');
-                        MinimalUIMinimize.fixMinimizedRule('bottom', '75px');
-                        break;
-                    }
-                    case 'bottomBar': {
-                        rootStyle.setProperty('--minimbot', '70px');
-                        rootStyle.setProperty('--minimtop', 'unset');
-                        rootStyle.setProperty('--minileft', '180px');
-                        const minimizedBar = $(`<div id="minimized-bar" class="app"></div>`).hide();
-                        minimizedBar.appendTo('body');
-                        MinimalUIMinimize.positionMinimizeBar();
-                        MinimalUIMinimize.fixMinimizedRule('top', 'unset');
-                        MinimalUIMinimize.fixMinimizedRule('bottom', '75px');
-                        break;
-                    }
-                }
+                    return newButtons.concat(result)
+                }, 'WRAPPER');
 
             }
 
-        });
-
-        Hooks.on('canvasPan', function() {
-            MinimalUIMinimize.positionMinimizeBar();
         });
 
         Hooks.on('closeSidebarTab', function(app) {

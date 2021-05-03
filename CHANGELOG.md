@@ -1,3 +1,84 @@
+### 0.9.4
+* Bugfix: Fine-tuning of maximized window size values
+
+### 0.9.4
+* Bugfix: Maximize now works fine when sidebar is uncollapsed (moves to left)
+
+### 0.9.3
+* Enhancement: New Maximize button available! (Default on, can be disabled)
+* Bugfix: Fixed a bug causing some minimized windows to restore incorrectly
+* Bugfix: Fixed a bug triggered when closing minimized buttons by pressing escape
+
+### 0.9.2
+* Enhancement: Organized Minimize mode removes text from close and minimize buttons
+* Bugfix: Improved clean up process should solve certain inconsistencies when minimizing windows in organized mode
+* Bugfix: Fixed a bug creating under certain circumstances undesired html elements with minimized bar
+* Bugfix: Improved 'escape' button handling with Organized Minimize mode
+
+### 0.9.1
+* Compatibility: Fixed compatibility with Polyglot (Thank you Ghostdesu)
+* Enhancement: Player List has now an option for "Default Size" with bigger font (Thanks Klaus)
+* Bugfix: Fixed 'bottom' mode in Organized Minimize working as 'top' (Thanks JLtheking2)
+* Bugfix: Dynamic UI Mode disabled by default
+* Bugfix: Sidebar initial visibility should always be effective, with and without Dynamic UI (Thanks Klaus)
+* Bugfix: Player List now has the same height as the Hotbar (Thanks Hauke)
+* Bugfix: Fixed settings text replacing "Always Visible" with "Start Visible" when according
+* Bugfix: Avoid unnecessary hook activations when collapsing or revealing chat sidebar in Dynamic Mode
+
+### 0.9.0
+* Enhancement: Organized Minimize 2.0 Re-written for better performance and stability
+* Enhancement: Organized Minimize now includes a minimize button for better UX Experience
+* Enhancement: Organized Minimize no longer forces windows to stay on that Axis
+* Enhancement: Organized Minimize will now remember the original positions of all windows when restoring
+* Enhancement: Module defaults revisited for a better first impression (affects new users only)
+* Enhancement: Minimized mode now takes available space intelligently based on other settings
+* Enhancement: Scene Preview will no longer overlap with multiple scene rows in the navigation
+* Compatibility: If module "Minimize Button" is installed, Organized Minimize will be disabled
+* Bugfix: Color settings no longer visible for players
+* Bugfix: Fixed an issue with CORS blocking style sheets for minimized setting when hosting in the Forge (Thanks Noshei)
+* Bugfix: Better styling defaults overall for a cleaner first impression
+
+### 0.8.8
+* Enhancement: Minimized mode will use bottom of screen when Macro Hotbar is hidden
+* Compatibility: Give MyTab priority over the control of FoundryVTT Logo
+* Bugfix: Improved controls auto-hide mode for better responsiveness and spacing
+* Bugfix: Fixed styling inaccuracies on some Minimized elements
+* Bugfix: Fixed scene preview blinking when hovering through scenes with minimized windows
+
+### 0.8.7
+* Bugfix: Fixed styling issues with Minimized bottom bar
+* Bugfix: Fixed incorrect shadow direction
+
+### 0.8.6
+* Enhancement: Organized Minimized Bar now takes only necessary amount of space
+* Enhancement: Better looking minimized windows with Minimal UI colorset
+* Enhancement: Better looking Minimized Bar (when enabled) and more transparent
+* Enhancement: New Hotbar setting option: Only GM (Hides Macro Hotbar for players)
+* Bugfix: Fixed miscalculation with the minimized bar in some circumstances
+* Bugfix: Fixed an error in some circumstances causing minimized windows to disappear
+
+### 0.8.5
+* Bugfix: Minimize+ colors darkened
+* Bugfix: Minimized a window that was pinned now stays pinned 
+
+### 0.8.4
+* Enhancement: Minimize+ Setting "Right Click" colours a minimized window to find it quickly later
+* Enhancement: Minimize+ Setting Mouse over minimized windows gives them shadow color 
+* Bugfix: Organized Minimize returns windows to their original position when restored/maximized
+* Bugfix: Organized Minimize removed unwanted movement when moving windows along the axis 
+* Bugfix: Sub controls menu adjusted to avoid unwanted shaking animation
+
+### 0.8.3
+* Compatibility: Monks Scene Navigation thanks to a contribution from ironmonk88
+* Bugfix: Disabled scene preview animation for better compatibility and less strange behaviour
+* Bugfix: Adjusted position of active tokens indicators in list navigation based on navigation size
+* Bugfix: Adjusted spacing for scene previous based on navigation size
+
+### 0.8.2
+* Localization: Gracias a @lozalojo por Minimal UI en Español!!!
+* Localization: Fixed english missing texts
+* Bugfix: Errors on the logo images will be ignored if logo is hidden
+
 ### 0.8.1
 * Enhancement: New setting allows providing custom logo image
 * Bugfix: Fixed a bug causing the Minimized bar to appear when changing scenes

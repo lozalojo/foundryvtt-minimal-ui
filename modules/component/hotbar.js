@@ -115,9 +115,10 @@ export default class MinimalUIHotbar {
             config: true,
             type: String,
             choices: {
-                "shown": game.i18n.localize("MinimalUI.SettingsAlwaysVisible"),
+                "shown": game.i18n.localize("MinimalUI.SettingsStartVisible"),
                 "autohide": game.i18n.localize("MinimalUI.SettingsAutoHide"),
                 "collapsed": game.i18n.localize("MinimalUI.SettingsCollapsed"),
+                "onlygm": game.i18n.localize("MinimalUI.SettingsOnlyGM"),
                 "hidden": game.i18n.localize("MinimalUI.SettingsHide")
             },
             default: "autohide",
@@ -127,15 +128,15 @@ export default class MinimalUIHotbar {
         });
 
         game.settings.register('minimal-ui', 'hotbarSize', {
-            name: game.i18n.localize("MinimalUI.HotbarStyleName"),
-            hint: game.i18n.localize("MinimalUI.HotbarStyleHint"),
+            name: game.i18n.localize("MinimalUI.HotbarSizeName"),
+            hint: game.i18n.localize("MinimalUI.HotbarSizeHint"),
             scope: 'world',
             config: true,
             type: String,
             choices: {
-                "slots_3": "3 Slots",
-                "slots_6": "6 Slots",
-                "slots_10": "10 Slots"
+                "slots_3": game.i18n.localize("MinimalUI.HotbarSlots3"),
+                "slots_6": game.i18n.localize("MinimalUI.HotbarSlots6"),
+                "slots_10":game.i18n.localize("MinimalUI.HotbarSlots10")
             },
             default: "slots_10",
             onChange: _ => {
@@ -185,7 +186,12 @@ export default class MinimalUIHotbar {
             MinimalUIHotbar.positionHotbar();
 
             if (game.settings.get('minimal-ui', 'hotbar') !== 'hidden') {
-                rootStyle.setProperty('--hotbarvis', 'visible');
+                const gmCondition = game.settings.get('minimal-ui', 'hotbar') === 'onlygm';
+                if (gmCondition) {
+                    if (game.user.isGM)
+                        rootStyle.setProperty('--hotbarvis', 'visible');
+                } else
+                    rootStyle.setProperty('--hotbarvis', 'visible');
             }
 
         });

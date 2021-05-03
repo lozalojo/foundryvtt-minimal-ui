@@ -3,8 +3,10 @@
     --navixpos: 125px;
     --navilh: 20px;
     --navifs: 14px;
+    --navilisttop: 16px;
     --navibuttonsize: 23px;
     --navithumbmarg: 10px;
+    --navithumbh: unset;
 }
 
 #navigation {
@@ -23,7 +25,7 @@
 }
 
 #navigation #scene-list .scene ul.scene-players {
-    top: 16px;
+    top: var(--navilisttop);
 }
 
 #navigation #scene-list .scene.view, #navigation #scene-list .scene.context {
@@ -41,3 +43,49 @@
     border-bottom: 1px solid var(--bordercolor);
     box-shadow: 0 0 var(--shadowstrength) var(--shadowcolor);
 }
+
+.hover_preview_container {
+    position: fixed;
+    top: var(--navithumbh);
+}
+
+/** COMPATIBILITY: Monks Scene Navigation */
+
+#navigation .monks-scene-navigation{
+    flex: 0 0 var(--navilh);
+    height: var(--navilh);
+}
+
+#navigation .monks-scene-navigation .scene-list > li.nav-item{
+    height: var(--navilh);
+}
+
+#navigation .monks-scene-navigation .scene-list > li.nav-item a{
+    line-height: var(--navilh);
+    height: var(--navilh);
+    font-size: var(--navifs);
+    padding:0 4px;
+}
+
+#navigation .monks-scene-navigation .scene-list > li.nav-item ul.scene-players{
+    top: var(--navilisttop);
+}
+
+#navigation .monks-scene-navigation .scene-list > li.nav-item.folder a{
+    padding-top:0;
+    border-top:1px;
+}
+
+#navigation .monks-scene-navigation .scene-list > li.nav-item.folder.expanded a{
+    height:calc(var(--navilh) + 6px);
+}
+
+#navigation .monks-scene-navigation .scene-list > li.nav-item.folder-header{
+    line-height: var(--navilh);
+}
+
+#navigation .monks-scene-navigation .scene-list > li.nav-item .navi-preview{
+    top: calc(var(--navithumbmarg) + 15px);
+}
+
+/** --------------- */

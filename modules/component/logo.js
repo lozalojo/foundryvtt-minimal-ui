@@ -30,15 +30,18 @@ export default class MinimalUILogo {
     }
 
     static updateImageSrc(srcimg) {
-        $("#logo")
-            .attr('src', srcimg)
-            .on('error', function() {
-                if (game.user.isGM)
-                    ui.notifications.warn(
-                        "Minimal UI: Your Logo Image could not be found. Restoring to Default Foundry Logo"
-                    );
-                MinimalUILogo.updateImageSrc("icons/fvtt.png")
-            });
+        const logoSetting = game.settings.get('minimal-ui', 'foundryLogoSize');
+        if (!game.modules.get('mytab')?.active && logoSetting !== 'hidden') {
+            $("#logo")
+                .attr('src', srcimg)
+                .on('error', function () {
+                    if (game.user.isGM)
+                        ui.notifications.warn(
+                            "Minimal UI: Your Logo Image could not be found. Restoring to Default Foundry Logo"
+                        );
+                    MinimalUILogo.updateImageSrc("icons/fvtt.png")
+                });
+        }
     }
 
     static initSettings() {
